@@ -5,9 +5,11 @@ Revises: 001
 """
 
 from uuid import uuid4
+import os
 
 from alembic import op
 import sqlalchemy as sa
+from app.core.security import hash_password
 
 
 revision = "002"
@@ -20,6 +22,10 @@ ADMIN_ROLE_NAME = "admin"
 
 
 def upgrade() -> None:
+    admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError("DEFAULT_ADMIN_PASSWORD must be set to seed the admin user")
+
     op.create_table(
         "auths",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -70,8 +76,7 @@ def upgrade() -> None:
             "id": uuid4(),
             "username": "Borath",
             "email": ADMIN_EMAIL,
-            # Replace the example value with a real password hash before deployment.
-            "password": "12345",
+            "password": hash_password(admin_password),
             "user_role": role_id,
         }],
     )

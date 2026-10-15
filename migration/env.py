@@ -1,19 +1,15 @@
 import asyncio
-import os
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.core.database import Base
+from app.core.database import Base, DATABASE_URL
 from app.domain.auth import model  # noqa: F401 - registers mapped models
 
 
 config = context.config
-database_url = os.getenv("DATABASE_URL")
-if not database_url:
-    raise RuntimeError("DATABASE_URL must be set to run database migrations")
-config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", str(DATABASE_URL).replace("%", "%%"))
 target_metadata = Base.metadata
 
 
