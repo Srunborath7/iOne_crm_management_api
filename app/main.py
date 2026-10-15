@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.core.database import Base, engine
 from app.api.v1 import router as v1_router
 from app.domain.auth import model as auth_models  # noqa: F401
+from app.domain.customers import model as customer_models  # noqa: F401
 
 
 @asynccontextmanager
