@@ -32,7 +32,7 @@ app.include_router(v1_router, prefix="/api/v1")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "i-one-crm-management-website.vercel.app",
+    "https://i-one-crm-management-website.vercel.app",
 ]
 
 app.add_middleware(
