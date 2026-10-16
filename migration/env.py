@@ -1,7 +1,9 @@
 import asyncio
+from urllib.parse import quote_plus  # noqa: F401 - only needed if you build the URL by hand
 
 from alembic import context
 from sqlalchemy import pool
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.database import Base, DATABASE_URL
@@ -9,7 +11,38 @@ from app.domain.auth import model as auth_models  # noqa: F401 - registers mappe
 from app.domain.customers import model as customer_models  # noqa: F401 - registers mapped models
 
 config = context.config
-config.set_main_option("sqlalchemy.url", str(DATABASE_URL).replace("%", "%%"))
+
+
+def get_url() -> str:
+    # str() on a SQLAlchemy URL object renders the password as "***",
+    # so render it explicitly when DATABASE_URL is a URL object.
+    if isinstance(DATABASE_URL, URL):
+        url = DATABASE_URL.render_as_string(hide_password=False)
+    else:
+        url = str(DATABASE_URL)
+
+    # asyncpg needs the +asyncpg driver in the scheme
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+url = get_url()
+
+# Temporary debug: remove once the deploy works. Does not print the password.
+_u = make_url(url)
+print(
+    "[alembic] user:", _u.username,
+    "| host:", _u.host,
+    "| port:", _u.port,
+    "| db:", _u.database,
+    "| password_len:", len(_u.password or ""),
+    "| driver:", _u.drivername,
+)
+
+config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
@@ -40,6 +73,9 @@ async def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # Only needed if you use Supabase's transaction pooler (port 6543).
+        # Harmless on the session pooler / direct connection.
+        connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
