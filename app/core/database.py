@@ -21,7 +21,9 @@ DATABASE_URL = parsed_database_url
 # Render PostgreSQL requires SSL for external connections.
 connect_args: dict = {}
 if "render.com" in (parsed_database_url.host or "") or os.getenv("RENDER"):
-    connect_args["ssl"] = True
+    # Supabase pooler certificates may not validate against the container's
+    # default CA bundle. "require" keeps TLS encryption without CA verification.
+    connect_args["ssl"] = "require"
 
 engine = create_async_engine(
     DATABASE_URL,

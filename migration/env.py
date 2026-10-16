@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from alembic import context
 from sqlalchemy import pool
@@ -57,13 +58,18 @@ def do_run_migrations(connection) -> None:
 
 
 async def run_migrations_online() -> None:
+    connect_args = {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    }
+    if os.getenv("RENDER") or "supabase.com" in (DATABASE_URL.host or ""):
+        connect_args["ssl"] = "require"
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        # Only needed if you use Supabase's transaction pooler (port 6543).
-        # Harmless on the session pooler / direct connection.
-        connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
