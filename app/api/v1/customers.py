@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_current_user
 from app.core.database import get_db
+from app.domain.auth.model import Auths
 from app.domain.customers.schema import (
     CustomerCreate,
     CustomerDetailResponse,
@@ -15,8 +17,9 @@ from app.domain.customers.schema import (
 )
 from app.services.customer_service import CustomerService
 
-router = APIRouter(prefix="/customers", tags=["customers"])
+router = APIRouter(prefix="/customers", tags=["customers"],dependencies=[Depends(get_current_user)])
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
+CurrentUserDep = Annotated[Auths, Depends(get_current_user)]
 
 
 @router.post(
@@ -49,6 +52,18 @@ async def list_customers(
         total=total,
         offset=offset,
         limit=limit,
+    )
+
+
+@router.get("/me", response_model=CustomerDetailResponse)
+async def get_my_customer(
+    session: SessionDep, current_user: CurrentUserDep
+) -> CustomerDetailResponse:
+    """Return the customer record matching the authenticated user's email."""
+    customer = await CustomerService(session).get_customer_by_email(current_user.email)
+    return CustomerDetailResponse(
+        message="Customer profile retrieved successfully",
+        data=CustomerResponse.model_validate(customer),
     )
 
 

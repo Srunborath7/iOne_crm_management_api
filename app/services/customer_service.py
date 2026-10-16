@@ -38,6 +38,12 @@ class CustomerService:
             raise NotFound("Customer")
         return customer
 
+    async def get_customer_by_email(self, email: str) -> Customer:
+        customer = await self.customers.get_by_email(email)
+        if customer is None:
+            raise NotFound("Customer")
+        return customer
+
     async def list_customers(
         self, offset: int = 0, limit: int = 100
     ) -> tuple[list[Customer], int]:
