@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,17 @@ class AuthRepository:
     async def get_by_email(self, email: str) -> Auths | None:
         result = await self.session.execute(
             select(Auths).options(selectinload(Auths.role)).where(Auths.email == email)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_password_reset_token(
+        self, token_hash: str, now: datetime
+    ) -> Auths | None:
+        result = await self.session.execute(
+            select(Auths).where(
+                Auths.password_reset_token_hash == token_hash,
+                Auths.password_reset_expires_at > now,
+            )
         )
         return result.scalar_one_or_none()
 

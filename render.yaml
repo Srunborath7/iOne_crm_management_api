@@ -12,3 +12,9 @@ services:
         generateValue: true
       - key: DEFAULT_ADMIN_PASSWORD
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PASSWORD_RESET_FROM_EMAIL
+        sync: false
+      - key: FRONTEND_RESET_PASSWORD_URL
+        value: https://i-one-crm-management-website.vercel.app/reset-password

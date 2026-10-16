@@ -1,20 +1,37 @@
+import logging
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import Conflict, NotFound, Unauthorized
+from app.core.email import (
+    EmailConfigurationError,
+    get_email_settings,
+    send_password_reset_email,
+)
+from app.core.exception import (
+    BadRequest,
+    Conflict,
+    NotFound,
+    ServiceUnavailable,
+    Unauthorized,
+)
 from app.core.security import (
     DUMMY_HASH,
     create_access_token,
+    create_password_reset_token,
     hash_password,
+    hash_password_reset_token,
     verify_password,
 )
 from app.domain.auth.model import Auths, RoleUser
 from app.domain.auth.schema import AuthCreate, AuthUpdate, LoginRequest, RoleCreate, RoleUpdate
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.role_repository import RoleRepository
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -135,3 +152,43 @@ class AuthService:
         if not verify_password(data.password, user.password):
             raise Unauthorized()
         return create_access_token(str(user.id), {"role": user.role.name})
+
+    async def forgot_password(self, email: str) -> None:
+        try:
+            get_email_settings()
+        except EmailConfigurationError as exc:
+            raise ServiceUnavailable(
+                "Password reset email delivery is not configured."
+            ) from exc
+
+        auth = await self.auths.get_by_email(email)
+
+        # Don't reveal whether the email exists
+        if auth is None:
+            return
+
+        token = create_password_reset_token()
+        auth.password_reset_token_hash = hash_password_reset_token(token)
+        auth.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(
+            minutes=15
+        )
+        await self.session.commit()
+
+        try:
+            await send_password_reset_email(auth.email, token)
+        except Exception:
+            # Keep the public response identical for known and unknown addresses.
+            logger.exception("Password reset email delivery failed.")
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        now = datetime.now(timezone.utc)
+        auth = await self.auths.get_by_password_reset_token(
+            hash_password_reset_token(token), now
+        )
+        if auth is None:
+            raise BadRequest("Invalid or expired password reset token.")
+
+        auth.password = hash_password(new_password)
+        auth.password_reset_token_hash = None
+        auth.password_reset_expires_at = None
+        await self.session.commit()

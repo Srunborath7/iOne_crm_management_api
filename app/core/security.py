@@ -46,6 +46,14 @@ def verify_password(password: str, hashed: str) -> bool:
     return hmac.compare_digest(actual, expected)
 
 
+def create_password_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def hash_password_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 DUMMY_HASH = hash_password("dummy-password")
 
 

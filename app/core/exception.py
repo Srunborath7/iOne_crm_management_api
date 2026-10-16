@@ -66,3 +66,8 @@ class Forbidden(AppException):
 
     def __init__(self, detail: str = "Access forbidden.", headers: dict[str, Any] | None = None):
         super().__init__(detail=detail, headers=headers)
+
+
+class ServiceUnavailable(AppException):
+    default_status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_message = "The requested service is temporarily unavailable."
