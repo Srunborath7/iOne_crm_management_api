@@ -1,9 +1,8 @@
 import asyncio
-from urllib.parse import quote_plus  # noqa: F401 - only needed if you build the URL by hand
 
 from alembic import context
 from sqlalchemy import pool
-from sqlalchemy.engine import URL, make_url
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.database import Base, DATABASE_URL
@@ -30,17 +29,6 @@ def get_url() -> str:
 
 
 url = get_url()
-
-# Temporary debug: remove once the deploy works. Does not print the password.
-_u = make_url(url)
-print(
-    "[alembic] user:", _u.username,
-    "| host:", _u.host,
-    "| port:", _u.port,
-    "| db:", _u.database,
-    "| password_len:", len(_u.password or ""),
-    "| driver:", _u.drivername,
-)
 
 config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
 target_metadata = Base.metadata

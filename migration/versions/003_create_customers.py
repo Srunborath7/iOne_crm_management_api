@@ -15,6 +15,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if sa.inspect(bind).has_table("customers"):
+        return
+
     op.create_table(
         "customers",
         sa.Column("id", sa.Uuid(), nullable=False),

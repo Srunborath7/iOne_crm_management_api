@@ -22,35 +22,32 @@ ADMIN_ROLE_NAME = "admin"
 
 
 def upgrade() -> None:
-    admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
-    if not admin_password:
-        raise RuntimeError("DEFAULT_ADMIN_PASSWORD must be set to seed the admin user")
+    bind = op.get_bind()
+    if not sa.inspect(bind).has_table("auths"):
+        op.create_table(
+            "auths",
+            sa.Column("id", sa.Uuid(), nullable=False),
+            sa.Column("username", sa.String(length=50), nullable=False),
+            sa.Column("email", sa.String(length=50), nullable=False),
+            sa.Column("password", sa.String(length=255), nullable=False),
+            sa.Column("user_role", sa.Uuid(), nullable=False),
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            ),
+            sa.ForeignKeyConstraint(["user_role"], ["role_users.id"]),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("email"),
+        )
 
-    op.create_table(
-        "auths",
-        sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("username", sa.String(length=50), nullable=False),
-        sa.Column("email", sa.String(length=50), nullable=False),
-        sa.Column("password", sa.String(length=255), nullable=False),
-        sa.Column("user_role", sa.Uuid(), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.func.now(),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.func.now(),
-            nullable=False,
-        ),
-        sa.ForeignKeyConstraint(["user_role"], ["role_users.id"]),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("email"),
-    )
-
-    role_id = uuid4()
     roles = sa.table(
         "role_users",
         sa.column("id", sa.Uuid()),
@@ -66,20 +63,37 @@ def upgrade() -> None:
         sa.column("user_role", sa.Uuid()),
     )
 
-    op.bulk_insert(
-        roles,
-        [{"id": role_id, "name": ADMIN_ROLE_NAME, "note": "System administrator"}],
-    )
-    op.bulk_insert(
-        users,
-        [{
-            "id": uuid4(),
-            "username": "Borath",
-            "email": ADMIN_EMAIL,
-            "password": hash_password(admin_password),
-            "user_role": role_id,
-        }],
-    )
+    role_id = bind.execute(
+        sa.select(roles.c.id).where(roles.c.name == ADMIN_ROLE_NAME)
+    ).scalar_one_or_none()
+    if role_id is None:
+        role_id = uuid4()
+        bind.execute(
+            sa.insert(roles).values(
+                id=role_id,
+                name=ADMIN_ROLE_NAME,
+                note="System administrator",
+            )
+        )
+
+    admin_exists = bind.execute(
+        sa.select(users.c.id).where(users.c.email == ADMIN_EMAIL)
+    ).first()
+    if admin_exists is None:
+        admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
+        if not admin_password:
+            raise RuntimeError(
+                "DEFAULT_ADMIN_PASSWORD must be set to seed the admin user"
+            )
+        bind.execute(
+            sa.insert(users).values(
+                id=uuid4(),
+                username="Borath",
+                email=ADMIN_EMAIL,
+                password=hash_password(admin_password),
+                user_role=role_id,
+            )
+        )
 
 
 def downgrade() -> None:
