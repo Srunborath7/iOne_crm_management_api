@@ -41,12 +41,12 @@ class RoleListResponse(BaseModel):
 
 
 class AuthCreate(BaseModel):
-    """Fields required to create a user and assign an existing role."""
+    """Fields required to create a user, with an optional role override."""
 
     username: str = Field(min_length=1, max_length=50)
     email: str = Field(min_length=1, max_length=50)
     password: str = Field(min_length=1, max_length=255)
-    user_role: UUID
+    user_role: UUID | None = None
 
 
 class AuthUpdate(BaseModel):

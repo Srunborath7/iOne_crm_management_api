@@ -27,9 +27,13 @@ class AuthService:
         if await self.auths.get_by_email(data.email):
             raise Conflict("A user with this email already exists.")
 
-        role = await self.roles.get(data.user_role)
+        if data.user_role is None:
+            role = await self.roles.get_by_name("customer")
+            if role is None:
+                role = await self.roles.add(RoleUser(name="customer"))
+        else:
+            role = await self.roles.get(data.user_role)
         if role is None:
-            
             raise NotFound("Role")
 
         user = Auths(
