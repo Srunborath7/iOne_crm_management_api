@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.database import Base, DATABASE_URL
 from app.domain.auth import model as auth_models  # noqa: F401 - registers mapped models
+from app.domain.brands import model as brand_models  # noqa: F401 - registers mapped models
 from app.domain.customers import model as customer_models  # noqa: F401 - registers mapped models
 
 config = context.config

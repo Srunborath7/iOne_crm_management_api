@@ -17,7 +17,7 @@ __all__ = [
     "AuthResponse",
     "RoleResponse",
     "RoleCreate",
-    "RoleUpdate",
+    "RoleUpdate", 
     "LoginRequest",
     "TokenResponse"
 ]
