@@ -13,6 +13,7 @@ from app.domain.auth import model as auth_models  # noqa: F401
 from app.domain.brands import model as brand_models  # noqa: F401
 from app.domain.customers import model as customer_models  # noqa: F401
 from app.domain.categories import model as category_models
+from app.domain.products import model as product_models
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)

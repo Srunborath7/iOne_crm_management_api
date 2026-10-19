@@ -24,7 +24,7 @@ class CategoryService:
         if await self.Categories.get_by_name(data.name):
             raise Conflict("A Category with this name already exists.")
         Category = Categories(**data.model_dump())
-        stored_image = await save_image(upload, "Categories")
+        stored_image = await save_image(upload, "categories")
         if stored_image is not None:
             Category.image_url, Category.image_path = stored_image
         try:
@@ -66,7 +66,7 @@ class CategoryService:
             existing = await self.Categories.get_by_name(changes["name"])
             if existing is not None:
                 raise Conflict("A Category with this name already exists.")
-        stored_image = await save_image(upload, "Categories") if upload else None
+        stored_image = await save_image(upload, "categories") if upload else None
         previous_image_url = Category.image_url
         for field, value in changes.items():
             if field == "name" and value is None:
