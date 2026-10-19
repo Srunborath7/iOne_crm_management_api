@@ -4,6 +4,8 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 asyncpg==0.30.0
+boto3==1.43.114
+botocore==1.43.114
 certifi==2026.7.22
 cffi==2.1.1
 charset-normalizer==3.5.2
@@ -24,6 +26,7 @@ httptools==0.9.0
 httpx==0.28.1
 idna==3.20
 Jinja2==3.1.6
+jmespath==1.1.0
 jwt==1.4.0
 Mako==1.4.3
 markdown-it-py==4.2.0
@@ -45,6 +48,7 @@ pydantic-extra-types==2.11.1
 pydantic-settings==2.16.0
 pydantic_core==2.50.1
 Pygments==2.21.0
+python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-multipart==0.0.32
 PyYAML==6.0.3
@@ -52,8 +56,10 @@ requests==2.34.2
 rich==15.0.0
 rich-toolkit==0.20.6
 rignore==0.8.1
+s3transfer==0.19.2
 sentry-sdk==2.72.0
 shellingham==1.5.4
+six==1.17.0
 SQLAlchemy==2.1.4
 starlette==1.8.0
 typer==0.27.3
