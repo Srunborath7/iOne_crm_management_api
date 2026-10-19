@@ -66,6 +66,13 @@ class ProductUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class ProductAuditUser(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    username: str
+
+
 class ProductResponse(BaseModel):
     """Public product representation."""
 
@@ -96,6 +103,10 @@ class ProductResponse(BaseModel):
     barcode: str | None = None
     manufacturer: str | None = None
     is_active: bool
+    created_by_id: UUID | None = None
+    updated_by_id: UUID | None = None
+    created_by: ProductAuditUser | None = None
+    updated_by: ProductAuditUser | None = None
     created_at: datetime
     updated_at: datetime
 

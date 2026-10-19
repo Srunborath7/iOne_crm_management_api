@@ -32,8 +32,16 @@ class Products(Base):
     barcode: Mapped[str | None] = mapped_column(String(100),nullable=True,unique=True)
     manufacturer: Mapped[str | None] = mapped_column(String(100),nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean,nullable=False,default=True)
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("auths.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    updated_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("auths.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False,default=lambda: datetime.now(timezone.utc),)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False,default=lambda: datetime.now(timezone.utc),onupdate=lambda: datetime.now(timezone.utc),)
     # ORM relationships
     brand = relationship("Brands",back_populates="products")
     category = relationship("Categories",back_populates="products")
+    creator = relationship("Auths", foreign_keys=[created_by_id])
+    updater = relationship("Auths", foreign_keys=[updated_by_id])

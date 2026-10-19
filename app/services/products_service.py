@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exception import Conflict, NotFound
 from app.core.upload import remove_image, save_image
+from app.domain.auth.model import Auths
 from app.domain.products.model import Products
 from app.domain.products.schema import ProductCreate, ProductUpdate
 from app.repositories.products_repository import ProductRepository
@@ -19,7 +20,10 @@ class ProductService:
         self.products = ProductRepository(session)
 
     async def create_product(
-        self, data: ProductCreate, upload: UploadFile | None = None
+        self,
+        data: ProductCreate,
+        created_by: Auths,
+        upload: UploadFile | None = None,
     ) -> Products:
         if await self.products.get_by_sku(data.sku):
             raise Conflict("A product with this SKU already exists.")
@@ -27,6 +31,8 @@ class ProductService:
             raise Conflict("A product with this barcode already exists.")
 
         product = Products(**data.model_dump(exclude={"image_url"}))
+        product.creator = created_by
+        product.updater = created_by
         stored_image = await save_image(upload, "products") if upload else None
         if stored_image is not None:
             product.image_url = stored_image[0]
@@ -64,6 +70,7 @@ class ProductService:
         self,
         product_id: UUID,
         data: ProductUpdate,
+        updated_by: Auths,
         upload: UploadFile | None = None,
     ) -> Products:
         product = await self.get_product(product_id)
@@ -83,6 +90,7 @@ class ProductService:
         previous_image_url = product.image_url
         for field, value in changes.items():
             setattr(product, field, value)
+        product.updater = updated_by
         if stored_image is not None:
             product.image_url = stored_image[0]
 
