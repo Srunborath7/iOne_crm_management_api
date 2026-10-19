@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
+from fastapi import APIRouter, Body, Depends, Query, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,10 +31,9 @@ CurrentUserDep = Annotated[Auths, Depends(get_current_user)]
 async def create_product(
     session: SessionDep,
     current_user: CurrentUserDep,
-    data: Annotated[ProductCreate, Form()],
-    image: Annotated[UploadFile | None, File()] = None,
+    data: Annotated[ProductCreate, Body()],
 ) -> ProductDetailResponse:
-    product = await ProductService(session).create_product(data, current_user, image)
+    product = await ProductService(session).create_product(data, current_user)
     return ProductDetailResponse(
         message="Product created successfully",
         data=ProductResponse.model_validate(product),
@@ -71,11 +70,10 @@ async def update_product(
     product_id: UUID,
     session: SessionDep,
     current_user: CurrentUserDep,
-    data: Annotated[ProductUpdate, Form()],
-    image: Annotated[UploadFile | None, File()] = None,
+    data: Annotated[ProductUpdate, Body()],
 ) -> ProductDetailResponse:
     product = await ProductService(session).update_product(
-        product_id, data, current_user, image
+        product_id, data, current_user
     )
     return ProductDetailResponse(
         message="Product updated successfully",

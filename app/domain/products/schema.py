@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ProductCreate(BaseModel):
@@ -36,6 +36,13 @@ class ProductCreate(BaseModel):
     manufacturer: str | None = Field(default=None, max_length=100)
     is_active: bool = True
 
+    @model_validator(mode="before")
+    @classmethod
+    def unwrap_data_envelope(cls, values):
+        if isinstance(values, dict) and set(values) == {"data"}:
+            return values["data"]
+        return values
+
 
 class ProductUpdate(BaseModel):
     """Fields that may be changed on a product."""
@@ -64,6 +71,13 @@ class ProductUpdate(BaseModel):
     barcode: str | None = Field(default=None, max_length=100)
     manufacturer: str | None = Field(default=None, max_length=100)
     is_active: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def unwrap_data_envelope(cls, values):
+        if isinstance(values, dict) and set(values) == {"data"}:
+            return values["data"]
+        return values
 
 
 class ProductAuditUser(BaseModel):
