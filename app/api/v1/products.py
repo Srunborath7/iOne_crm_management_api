@@ -1,9 +1,12 @@
-from typing import Annotated
+import json
+from typing import Annotated, TypeVar
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.api.dependencies import get_current_user
 from app.core.database import get_db
@@ -25,15 +28,62 @@ router = APIRouter(
 )
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
 CurrentUserDep = Annotated[Auths, Depends(get_current_user)]
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
+
+async def parse_product_input(
+    request: Request, schema: type[ModelT]
+) -> tuple[ModelT, StarletteUploadFile | None]:
+    """Read JSON or multipart input, including JSON in a multipart `data` field."""
+    content_type = request.headers.get("content-type", "")
+    upload = None
+
+    try:
+        if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+            form = await request.form()
+            upload_value = form.get("image")
+            if isinstance(upload_value, StarletteUploadFile):
+                upload = upload_value
+
+            raw_data = form.get("data")
+            if isinstance(raw_data, str):
+                payload = json.loads(raw_data)
+            else:
+                payload = {
+                    key: value
+                    for key, value in form.items()
+                    if key != "image" and not isinstance(value, StarletteUploadFile)
+                }
+        elif "application/json" in content_type:
+            payload = await request.json()
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Send application/json or multipart/form-data.",
+            )
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The multipart 'data' field must contain valid JSON.",
+        ) from exc
+
+    try:
+        return schema.model_validate(payload), upload
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(include_input=False),
+        ) from exc
 
 
 @router.post("/", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
+    request: Request,
     session: SessionDep,
     current_user: CurrentUserDep,
-    data: Annotated[ProductCreate, Body()],
 ) -> ProductDetailResponse:
-    product = await ProductService(session).create_product(data, current_user)
+    data, image = await parse_product_input(request, ProductCreate)
+    product = await ProductService(session).create_product(data, current_user, image)
     return ProductDetailResponse(
         message="Product created successfully",
         data=ProductResponse.model_validate(product),
@@ -68,12 +118,13 @@ async def get_product(product_id: UUID, session: SessionDep) -> ProductDetailRes
 @router.patch("/{product_id}", response_model=ProductDetailResponse)
 async def update_product(
     product_id: UUID,
+    request: Request,
     session: SessionDep,
     current_user: CurrentUserDep,
-    data: Annotated[ProductUpdate, Body()],
 ) -> ProductDetailResponse:
+    data, image = await parse_product_input(request, ProductUpdate)
     product = await ProductService(session).update_product(
-        product_id, data, current_user
+        product_id, data, current_user, image
     )
     return ProductDetailResponse(
         message="Product updated successfully",
