@@ -22,13 +22,12 @@ from app.services.category_service import CategoryService
 
 router = APIRouter(
     prefix="/categories",
-    tags=["Categories"],
-    dependencies=[Depends(get_current_user)],
+    tags=["Categories"]
 )
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
+AuthDep = Depends(get_current_user)
 
-
-@router.post("/", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CategoryDetailResponse, status_code=status.HTTP_201_CREATED, dependencies=[AuthDep],)
 async def create_Category(
     session: SessionDep,
     name: Annotated[str, Form(min_length=1, max_length=50)],
@@ -84,7 +83,7 @@ async def get_Category(Category_id: UUID, session: SessionDep) -> CategoryDetail
     )
 
 
-@router.patch("/{category_id}", response_model=CategoryDetailResponse)
+@router.patch("/{category_id}", response_model=CategoryDetailResponse, dependencies=[AuthDep])
 async def update_Category(
     Category_id: UUID,
     session: SessionDep,
@@ -105,7 +104,7 @@ async def update_Category(
     )
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{category_id}", status_code=status.HTTP_200_OK, dependencies=[AuthDep])
 async def delete_Category(Category_id: UUID, session: SessionDep) -> Response:
     await CategoryService(session).delete_Category(Category_id)
     return JSONResponse(
