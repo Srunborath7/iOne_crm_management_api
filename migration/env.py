@@ -10,6 +10,8 @@ from app.core.database import Base, DATABASE_URL
 from app.domain.auth import model as auth_models  # noqa: F401 - registers mapped models
 from app.domain.brands import model as brand_models  # noqa: F401 - registers mapped models
 from app.domain.customers import model as customer_models  # noqa: F401 - registers mapped models
+from app.domain.categories import model as category_models  # noqa: F401 - registers mapped models
+from app.domain.products import model as product_models  # noqa: F401 - registers mapped models
 
 config = context.config
 

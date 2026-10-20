@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class ProductCreate(BaseModel):
@@ -76,7 +76,21 @@ class ProductUpdate(BaseModel):
     @classmethod
     def unwrap_data_envelope(cls, values):
         if isinstance(values, dict) and set(values) == {"data"}:
-            return values["data"]
+            values = values["data"]
+        if isinstance(values, dict):
+            nullable_fields = {
+                "model", "description", "brand_id", "category_id", "storage", "ram",
+                "color", "operating_system", "screen_size", "battery_capacity",
+                "connectivity", "discount_price", "image_url", "barcode", "manufacturer",
+            }
+            invalid_nulls = [
+                field for field, value in values.items()
+                if value is None and field not in nullable_fields
+            ]
+            if invalid_nulls:
+                raise ValueError(
+                    f"These fields cannot be null: {', '.join(invalid_nulls)}"
+                )
         return values
 
 
@@ -119,8 +133,14 @@ class ProductResponse(BaseModel):
     is_active: bool
     created_by_id: UUID | None = None
     updated_by_id: UUID | None = None
-    created_by: ProductAuditUser | None = None
-    updated_by: ProductAuditUser | None = None
+    created_by: ProductAuditUser | None = Field(
+        default=None,
+        validation_alias=AliasChoices("created_by", "creator"),
+    )
+    updated_by: ProductAuditUser | None = Field(
+        default=None,
+        validation_alias=AliasChoices("updated_by", "updater"),
+    )
     created_at: datetime
     updated_at: datetime
 

@@ -106,7 +106,7 @@ class ProductService:
             if stored_image is not None:
                 await remove_image(stored_image[0])
             raise
-        if stored_image is not None and previous_image_url:
+        if previous_image_url and product.image_url != previous_image_url:
             await remove_image(previous_image_url)
         await self.session.refresh(product)
         return product

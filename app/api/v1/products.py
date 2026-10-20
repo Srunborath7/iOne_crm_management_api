@@ -76,7 +76,31 @@ async def parse_product_input(
         ) from exc
 
 
-@router.post("/", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ProductDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": ProductCreate.model_json_schema(),
+                },
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            **ProductCreate.model_json_schema()["properties"],
+                            "image": {"type": "string", "format": "binary"},
+                        },
+                        "required": ProductCreate.model_json_schema().get("required", []),
+                    },
+                },
+            },
+        }
+    },
+)
 async def create_product(
     request: Request,
     session: SessionDep,
@@ -115,7 +139,29 @@ async def get_product(product_id: UUID, session: SessionDep) -> ProductDetailRes
     )
 
 
-@router.patch("/{product_id}", response_model=ProductDetailResponse)
+@router.patch(
+    "/{product_id}",
+    response_model=ProductDetailResponse,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": ProductUpdate.model_json_schema(),
+                },
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            **ProductUpdate.model_json_schema()["properties"],
+                            "image": {"type": "string", "format": "binary"},
+                        },
+                    },
+                },
+            },
+        }
+    },
+)
 async def update_product(
     product_id: UUID,
     request: Request,
