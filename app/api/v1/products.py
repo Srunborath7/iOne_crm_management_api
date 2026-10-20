@@ -24,12 +24,11 @@ from app.services.products_service import ProductService
 router = APIRouter(
     prefix="/products",
     tags=["products"],
-    dependencies=[Depends(get_current_user)],
 )
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
 CurrentUserDep = Annotated[Auths, Depends(get_current_user)]
 ModelT = TypeVar("ModelT", bound=BaseModel)
-
+AuthDep = Depends(get_current_user)
 
 async def parse_product_input(
     request: Request, schema: type[ModelT]
@@ -79,7 +78,7 @@ async def parse_product_input(
 @router.post(
     "/",
     response_model=ProductDetailResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_201_CREATED,dependencies=[AuthDep],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -141,7 +140,7 @@ async def get_product(product_id: UUID, session: SessionDep) -> ProductDetailRes
 
 @router.patch(
     "/{product_id}",
-    response_model=ProductDetailResponse,
+    response_model=ProductDetailResponse,dependencies=[AuthDep],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -178,7 +177,7 @@ async def update_product(
     )
 
 
-@router.delete("/{product_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{product_id}", status_code=status.HTTP_200_OK,dependencies=[AuthDep])
 async def delete_product(product_id: UUID, session: SessionDep) -> Response:
     await ProductService(session).delete_product(product_id)
     return JSONResponse(

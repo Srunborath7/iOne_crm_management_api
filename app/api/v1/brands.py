@@ -23,12 +23,11 @@ from app.services.brand_service import BrandService
 router = APIRouter(
     prefix="/brands",
     tags=["brands"],
-    dependencies=[Depends(get_current_user)],
 )
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
+AuthDep = Depends(get_current_user)
 
-
-@router.post("/", response_model=BrandDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BrandDetailResponse, status_code=status.HTTP_201_CREATED, dependencies=[AuthDep])
 async def create_brand(
     session: SessionDep,
     name: Annotated[str, Form(min_length=1, max_length=50)],
@@ -84,7 +83,7 @@ async def get_brand(brand_id: UUID, session: SessionDep) -> BrandDetailResponse:
     )
 
 
-@router.patch("/{brand_id}", response_model=BrandDetailResponse)
+@router.patch("/{brand_id}", response_model=BrandDetailResponse, dependencies=[AuthDep])
 async def update_brand(
     brand_id: UUID,
     session: SessionDep,
@@ -105,7 +104,7 @@ async def update_brand(
     )
 
 
-@router.delete("/{brand_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{brand_id}", status_code=status.HTTP_200_OK, dependencies=[AuthDep])
 async def delete_brand(brand_id: UUID, session: SessionDep) -> Response:
     await BrandService(session).delete_brand(brand_id)
     return JSONResponse(
